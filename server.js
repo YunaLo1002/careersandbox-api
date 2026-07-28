@@ -2,13 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-
 const app = express();
+const experienceRoutes = require('./routes/experiences');
+
+
 app.use(cors());
 app.use(express.json()); // parse JSON request bodies
+app.use('/experiences', experienceRoutes);
 
 // Health check: open http://localhost:8000 in a browser to verify
 app.get('/', (req, res) => res.json({ status: 'ok' }));
