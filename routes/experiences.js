@@ -41,6 +41,50 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
+// GET /experiences/:id — fetch one of the caller's own experiences (for prefill)
+router.get('/:id', requireAuth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ detail: 'Experience not found' });
+    }
+    const exp = await Experience.findOne({ _id: req.params.id, userId: req.userId });
+    if (!exp) return res.status(404).json({ detail: 'Experience not found' });
+    return res.status(200).json(toDto(exp));
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ detail: 'Internal server error' });
+  }
+});
+
+// PATCH /experiences/:id — update one of the caller's own experiences
+router.patch('/:id', requireAuth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ detail: 'Experience not found' });
+    }
+    // Whitelist, same rule as users PATCH
+    const allowed = ['title', 'category', 'period', 'role', 'action', 'result', 'learning', 'tags'];
+    const updates = {};
+    for (const key of allowed) {
+      if (req.body?.[key] !== undefined) updates[key] = req.body[key];
+    }
+    if (updates.tags !== undefined && !Array.isArray(updates.tags)) delete updates.tags;
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ detail: 'No valid fields to update' });
+    }
+    const exp = await Experience.findOneAndUpdate(
+      { _id: req.params.id, userId: req.userId }, // ownership check
+      updates,
+      { new: true, runValidators: true },
+    );
+    if (!exp) return res.status(404).json({ detail: 'Experience not found' });
+    return res.status(200).json(toDto(exp));
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ detail: 'Internal server error' });
+  }
+});
+
 // DELETE /experiences/:id — delete one of the caller's own experiences
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
