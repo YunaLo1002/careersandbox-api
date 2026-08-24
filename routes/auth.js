@@ -51,7 +51,12 @@ router.post('/register', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ detail: 'Internal server error' });
+    return res.status(500).json({ 
+      error: { 
+        code: 'internal_error',
+        message: '服務暫時無法回應，請稍後再試' 
+      } 
+    })
   }
 });
 
@@ -77,7 +82,12 @@ router.post('/login', async (req, res) => {
 
     const user = await User.findById(account.userId);
     if (!user) {
-      return res.status(500).json({ detail: 'User profile not found' });
+      return res.status(500).json({ 
+        error: { 
+          code: 'internal_error',
+          message: '服務暫時無法回應，請稍後再試' 
+        } 
+      })
     }
 
     // Sign a token that carries the userId, valid for 7 days
@@ -93,7 +103,12 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ detail: 'Internal server error' });
+    return res.status(500).json({ 
+      error: { 
+        code: 'internal_error',
+        message: '服務暫時無法回應，請稍後再試' 
+      } 
+    })
   }
 });
 

@@ -12,7 +12,12 @@ router.get('/', requireAuth, async (req, res) => {
     return res.status(200).json(items.map(toDto));
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ detail: 'Internal server error' });
+    return res.status(500).json({ 
+      error: { 
+        code: 'internal_error',
+        message: '服務暫時無法回應，請稍後再試' 
+      } 
+    })
   }
 });
 
@@ -37,7 +42,12 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(201).json(toDto(exp));
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ detail: 'Internal server error' });
+    return res.status(500).json({ 
+      error: { 
+        code: 'internal_error',
+        message: '服務暫時無法回應，請稍後再試' 
+      } 
+    })
   }
 });
 
@@ -52,7 +62,12 @@ router.get('/:id', requireAuth, async (req, res) => {
     return res.status(200).json(toDto(exp));
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ detail: 'Internal server error' });
+    return res.status(500).json({ 
+      error: { 
+        code: 'internal_error',
+        message: '服務暫時無法回應，請稍後再試' 
+      } 
+    })
   }
 });
 
@@ -81,7 +96,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
     return res.status(200).json(toDto(exp));
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ detail: 'Internal server error' });
+    return res.status(500).json({ 
+      error: { 
+        code: 'internal_error',
+        message: '服務暫時無法回應，請稍後再試' 
+      } 
+    })
   }
 });
 
@@ -102,7 +122,12 @@ router.delete('/:id', requireAuth, async (req, res) => {
     return res.status(200).json({ id: deleted._id.toString(), deleted: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ detail: 'Internal server error' });
+    return res.status(500).json({ 
+      error: { 
+        code: 'internal_error',
+        message: '服務暫時無法回應，請稍後再試' 
+      } 
+    })
   }
 });
 

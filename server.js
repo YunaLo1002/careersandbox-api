@@ -7,13 +7,14 @@ const userRoutes = require('./routes/users');
 const app = express();
 const experienceRoutes = require('./routes/experiences');
 const jobRoutes = require('./routes/jobs');
-
-app.use('/api/jobs', jobRoutes);
+const resumeVersionRoutes = require('./routes/resumeVersions');
 
 
 app.use(cors());
 app.use(express.json()); // parse JSON request bodies
 app.use('/experiences', experienceRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/resume-versions', resumeVersionRoutes);
 
 // Health check: open http://localhost:8000 in a browser to verify
 app.get('/', (req, res) => res.json({ status: 'ok' }));
