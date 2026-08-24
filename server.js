@@ -6,6 +6,9 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const app = express();
 const experienceRoutes = require('./routes/experiences');
+const jobRoutes = require('./routes/jobs');
+
+app.use('/api/jobs', jobRoutes);
 
 
 app.use(cors());

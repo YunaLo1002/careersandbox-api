@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Job } = require('../models/Job');
 
+
 // 1. 依 sourceId 取得單個職缺（給 AI 服務用）
 // GET /api/jobs/:sourceId
 router.get('/:sourceId', async (req, res) => {
