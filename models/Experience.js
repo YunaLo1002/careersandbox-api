@@ -6,7 +6,7 @@ const experienceSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title: { type: String, required: true },
     category: { type: String, required: true }, // 學業 / 工作 / 社團 / 競賽 / 其他
-    period: { type: String, default: '' },      // e.g. "2024.09 - 2025.06"
+    timeRange: { type: String, default: '' },      // e.g. "2024.09 - 2025.06"
     role: { type: String, default: '' },
     action: { type: String, default: '' },      // what they did
     result: { type: String, default: '' },      // measurable outcome
