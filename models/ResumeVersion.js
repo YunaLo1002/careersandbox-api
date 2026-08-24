@@ -15,6 +15,7 @@ const resumeVersionSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     jobId: { type: String, required: true },              // 對應職缺 ID
+    jdSnapshot: { type: String, default: '' },     // ← 新增：外部貼上的 JD 快照
     items: [resumeItemSchema],                             // 客製後的經歷清單
   },
   { timestamps: true }
