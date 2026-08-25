@@ -8,6 +8,16 @@ const languageSchema = new mongoose.Schema(
   },
   { _id: false }
 );
+// Sub-document for activities: { title, role, period, highlight }
+const activitySchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },      // 社團/活動名稱
+    role: { type: String, default: '' },          // 擔任的職務
+    period: { type: String, default: '' },        // 時間區間（如 "2024.9-2025.6"）
+    highlight: { type: String, default: '' },     // 主要成就/亮點
+  },
+  { _id: false }
+);
 
 const userSchema = new mongoose.Schema(
   {
@@ -25,6 +35,7 @@ const userSchema = new mongoose.Schema(
     skillsHave: { type: [String], default: [] },
     skillsWant: { type: [String], default: [] },
     languages: { type: [languageSchema], default: [] },
+    activities: { type: [activitySchema], default: [] },
   },
   { timestamps: true }
 );

@@ -1,0 +1,5 @@
+### 查詢所有職缺（有技能的）
+GET http://localhost:8000/api/jobs?withSkills=true&page=1&limit=5
+
+### 依 sourceId 查單個職缺
+GET http://localhost:8000/api/jobs/2utgw
