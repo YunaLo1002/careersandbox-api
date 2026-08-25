@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const app = express();
 const experienceRoutes = require('./routes/experiences');
+const experienceChatRoutes = require('./routes/experienceChat');
 
 
 app.use(cors());
@@ -17,6 +18,7 @@ app.get('/', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/users', userRoutes);
 app.use('/auth', authRoutes);
+app.use('/experience-chat', experienceChatRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URI)
