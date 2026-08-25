@@ -6,8 +6,12 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const app = express();
 const experienceRoutes = require('./routes/experiences');
+<<<<<<< HEAD
+const experienceChatRoutes = require('./routes/experienceChat');
+=======
 const jobRoutes = require('./routes/jobs');
 const resumeVersionRoutes = require('./routes/resumeVersions');
+>>>>>>> origin/main
 
 
 app.use(cors());
@@ -23,6 +27,12 @@ app.use('/users', userRoutes);
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
 
+<<<<<<< HEAD
+app.use('/users', userRoutes);
+app.use('/auth', authRoutes);
+app.use('/experience-chat', experienceChatRoutes);
+=======
+>>>>>>> origin/main
 
 mongoose
   .connect(process.env.MONGODB_URI)
