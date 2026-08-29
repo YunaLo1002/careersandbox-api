@@ -2,37 +2,31 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const app = express();
 const experienceRoutes = require('./routes/experiences');
-<<<<<<< HEAD
 const experienceChatRoutes = require('./routes/experienceChat');
-=======
 const jobRoutes = require('./routes/jobs');
 const resumeVersionRoutes = require('./routes/resumeVersions');
->>>>>>> origin/main
 
+const app = express();
 
 app.use(cors());
-app.use(express.json()); // parse JSON request bodies
+app.use(express.json());
 
-// 所有路由（暫時都不驗證）
-app.use('/api/auth', authRoutes);
-app.use('/api/jobs', jobRoutes);
-app.use('/api/experiences', experienceRoutes);
-app.use('/api/resume-versions', resumeVersionRoutes);
-app.use('/api/users', userRoutes);
+// Routes. No /api prefix — the team guide and the Android client already use
+// these paths, so changing them would mean a coordinated client update for no
+// real benefit on an API-only service.
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/experiences', experienceRoutes);
+app.use('/experience-chat', experienceChatRoutes);
+app.use('/jobs', jobRoutes);
+app.use('/resume-versions', resumeVersionRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
-
-<<<<<<< HEAD
-app.use('/users', userRoutes);
-app.use('/auth', authRoutes);
-app.use('/experience-chat', experienceChatRoutes);
-=======
->>>>>>> origin/main
 
 mongoose
   .connect(process.env.MONGODB_URI)
