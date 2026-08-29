@@ -16,7 +16,10 @@ const activitySchema = new mongoose.Schema(
     period: { type: String, default: '' },        // 時間區間（如 "2024.9-2025.6"）
     highlight: { type: String, default: '' },     // 主要成就/亮點
   },
-  { _id: false }
+  // _id: true — the client needs a stable handle to edit or delete one entry.
+  // Array index will not do: it shifts the moment an earlier entry is removed,
+  // so a later edit would land on the wrong record.
+  { _id: true }
 );
 
 const userSchema = new mongoose.Schema(

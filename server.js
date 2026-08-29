@@ -18,11 +18,11 @@ app.use(cors());
 app.use(express.json()); // parse JSON request bodies
 
 // 所有路由（暫時都不驗證）
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
-app.use('/experiences', experienceRoutes);
+app.use('/api/experiences', experienceRoutes);
 app.use('/api/resume-versions', resumeVersionRoutes);
-app.use('/users', userRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));

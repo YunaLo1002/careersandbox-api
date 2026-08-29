@@ -7,7 +7,7 @@ module.exports = function requireAuth(req, res, next) {
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
 
   if (!token) {
-    return res.status(401).json({ detail: 'Missing token' });
+    return res.status(401).json({ error: { code: 'unauthorized', message: '請先登入' } });
   }
 
   try {
@@ -15,7 +15,7 @@ module.exports = function requireAuth(req, res, next) {
     req.userId = payload.userId;
     next(); // token is valid — continue to the actual route
   } catch (err) {
-    return res.status(401).json({ detail: 'Invalid or expired token' });
+    return res.status(401).json({ error: { code: 'token_invalid', message: '登入已過期，請重新登入' } });
   }
 };
 

@@ -16,12 +16,12 @@ router.post('/register', async (req, res) => {
     } = req.body;
 
     if (!email || !password || !name) {
-      return res.status(400).json({ detail: 'Missing required fields' });
+      return res.status(422).json({ error: { code: 'validation_error', message: '請填寫必要欄位' } });
     }
 
     const existing = await Account.findOne({ email });
     if (existing) {
-      return res.status(409).json({ detail: 'Email already registered' });
+      return res.status(409).json({ error: { code: 'email_taken', message: '此 Email 已註冊' } });
     }
 
     const user = await User.create({
@@ -66,18 +66,18 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ detail: 'Missing required fields' });
+      return res.status(422).json({ error: { code: 'validation_error', message: '請填寫必要欄位' } });
     }
 
     const account = await Account.findOne({ email });
     if (!account) {
       // Same message as wrong password — don't reveal which one failed
-      return res.status(401).json({ detail: 'Email or password incorrect' });
+      return res.status(401).json({ error: { code: 'invalid_credentials', message: 'Email 或密碼錯誤' } });
     }
 
     const ok = await bcrypt.compare(password, account.passwordHash);
     if (!ok) {
-      return res.status(401).json({ detail: 'Email or password incorrect' });
+      return res.status(401).json({ error: { code: 'invalid_credentials', message: 'Email 或密碼錯誤' } });
     }
 
     const user = await User.findById(account.userId);
