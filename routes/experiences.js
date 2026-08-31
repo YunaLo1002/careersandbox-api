@@ -186,13 +186,21 @@ function toDto(exp) {
   const result = d.result || legacy.result;
   const learning = d.learning || legacy.learning;
 
+  const timeRange = exp.timeRange || raw.period || '';
+
+  // The Android client's ExperienceResponse declares every field non-null and
+  // expects `description` to be a String and the time field to be `period`.
+  // The database uses the refactored shape (timeRange + nested description),
+  // so both spellings are emitted here: the client keeps working untouched,
+  // and callers on the new contract get timeRange / descriptionDetail.
   return {
     id: exp._id.toString(),
     title: exp.title,
     category: exp.category,
-    timeRange: exp.timeRange || raw.period || '',
-    description: { role, action, result, learning },
-    // Flat copies so an older client build keeps working during the transition.
+    period: timeRange,
+    timeRange,
+    description: [action, result].filter(Boolean).join(' '),
+    descriptionDetail: { role, action, result, learning },
     role,
     action,
     result,
