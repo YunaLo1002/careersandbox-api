@@ -32,7 +32,13 @@ router.post('/turn', requireAuth, async (req, res) => {
   try {
     const { history, answer } = req.body ?? {};
     if (typeof answer !== 'string' || !answer.trim()) {
-      return res.status(400).json({ detail: 'Missing answer' });
+      return res.status(422).json({ error: { code: 'validation_error', message: '請輸入回答內容' } });
+    }
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set — the guided chat cannot work');
+      return res.status(503).json({
+        error: { code: 'ai_not_configured', message: '對話式功能尚未設定完成，請改用表單式輸入' },
+      });
     }
 
     const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
@@ -59,12 +65,14 @@ router.post('/turn', requireAuth, async (req, res) => {
         response_format: { type: 'json_object' },
         temperature: 0.7,
       }),
+      // One LLM call runs 2-10s; without this a stalled request never returns.
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!aiRes.ok) {
       const errText = await aiRes.text();
       console.error('OpenAI API error:', aiRes.status, errText);
-      return res.status(502).json({ detail: 'AI service unavailable' });
+      return res.status(502).json({ error: { code: 'ai_unavailable', message: 'AI 服務暫時無法回應，請稍後再試' } });
     }
 
     const data = await aiRes.json();
@@ -78,7 +86,7 @@ router.post('/turn', requireAuth, async (req, res) => {
       // Don't crash the flow — ask the user to rephrase instead
       return res.status(200).json({
         nextQuestion: '不好意思，我剛剛沒聽懂，可以換個方式再說一次嗎？',
-        extractedFields: {},
+        extractedFields: { role: '', action: '', result: '', learning: '', title: '' },
         done: false,
       });
     }
@@ -90,7 +98,7 @@ router.post('/turn', requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ detail: 'Internal server error' });
+    return res.status(500).json({ error: { code: 'internal_error', message: '服務暫時無法回應，請稍後再試' } });
   }
 });
 
