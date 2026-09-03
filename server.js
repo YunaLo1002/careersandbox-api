@@ -9,6 +9,7 @@ const experienceRoutes = require('./routes/experiences');
 const experienceChatRoutes = require('./routes/experienceChat');
 const jobRoutes = require('./routes/jobs');
 const resumeVersionRoutes = require('./routes/resumeVersions');
+const interviewTranscribeRoutes = require('./routes/interviewTranscribe');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/experiences', experienceRoutes);
 app.use('/experience-chat', experienceChatRoutes);
 app.use('/jobs', jobRoutes);
 app.use('/resume-versions', resumeVersionRoutes);
+app.use('/interview', interviewTranscribeRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
