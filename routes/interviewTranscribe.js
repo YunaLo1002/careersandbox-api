@@ -32,9 +32,14 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
 
     // Whisper 的轉錄端點跟 experienceChat.js 用的 chat completions 端點不一樣，
     // 它也是吃 multipart/form-data（跟前端傳給我們的方式一樣），所以這裡也要用 FormData 包一次再轉送出去。
-    const form = new FormData();
-            form.append('file', new Blob([req.file.buffer], { type: 'audio/mp4' }), 'audio.m4a');
+        const form = new FormData();
+    form.append('file', new Blob([req.file.buffer], { type: 'audio/mp4' }), 'audio.m4a');
     form.append('model', TRANSCRIBE_MODEL);
+    // 模型組需要 segment 級別的時間戳記跟每段的信心指標，這兩個參數是關鍵：
+    // verbose_json 讓 OpenAI 除了整段文字，額外回傳 segments 陣列；
+    // timestamp_granularities[] 指定要 segment 級（不要 word 級，避免多餘延遲）
+    form.append('response_format', 'verbose_json');
+    form.append('timestamp_granularities[]', 'segment');
 
     const aiRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -51,7 +56,17 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
     }
 
     const data = await aiRes.json();
-    return res.status(200).json({ text: data.text ?? '' });
+    return res.status(200).json({
+      text: data.text ?? '',
+      duration: data.duration ?? null,
+      segments: (data.segments ?? []).map((s) => ({
+        start: s.start,
+        end: s.end,
+        text: s.text,
+        avgLogprob: s.avg_logprob,
+        noSpeechProb: s.no_speech_prob,
+      })),
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: { code: 'internal_error', message: '服務暫時無法回應，請稍後再試' } });
