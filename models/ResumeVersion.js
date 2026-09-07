@@ -14,8 +14,20 @@ const resumeItemSchema = new mongoose.Schema(
 const resumeVersionSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    jobId: { type: String, required: true },              // 對應職缺 ID
-    jdSnapshot: { type: String, default: '' },     // ← 新增：外部貼上的 JD 快照
+    // The in-app job's sourceId. Not required: the handover document defines a
+    // second path where the user pastes a JD from outside the app, and those
+    // versions have only jdSnapshot. The route enforces that one of the two
+    // is present.
+    jobId: { type: String, default: '' },
+
+    // Full JD text, stored as a snapshot for the pasted-JD path. Keeping a
+    // copy here means the version stays readable even after the original
+    // posting changes or is taken down.
+    jdSnapshot: { type: String, default: '' },
+
+    // User-facing name for this version, e.g. 「強調數據分析」.
+    label: { type: String, default: '', trim: true, maxlength: 100 },
+
     items: [resumeItemSchema],                             // 客製後的經歷清單
   },
   { timestamps: true }
