@@ -33,7 +33,10 @@ const careerKnowledgeSchema = new Schema(
     stats: { type: Schema.Types.Mixed },
     jobCount: Number,
   },
-  { collection: 'career_knowledge', strict: false, versionKey: false, timestamps: false }
+  { // Crawler-side raw entries. The vector knowledge base lives in
+// `career_knowledge` and has a different shape (kb_xxx ids, embedding
+// field); only the model team's ingest_atlas.py writes there.
+    collection: 'career_knowledge_raw', strict: false, versionKey: false, timestamps: false }
 );
 
 careerKnowledgeSchema.query.articles = function () {
