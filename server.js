@@ -34,8 +34,12 @@ mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('MongoDB connected');
-    app.listen(process.env.PORT, () => {
-      console.log(`Server running on http://localhost:${process.env.PORT}`);
+    // Cloud platforms inject their own PORT. The 0.0.0.0 host matters there:
+    // the default binds to localhost only, so the platform's health check
+    // cannot reach the process and the deploy is marked as failed.
+    const port = process.env.PORT || 8000;
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`Server running on port ${port}`);
     });
   })
   .catch((err) => console.error('MongoDB connection error:', err));
