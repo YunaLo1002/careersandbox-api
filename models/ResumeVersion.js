@@ -25,8 +25,27 @@ const resumeVersionSchema = new mongoose.Schema(
     // posting changes or is taken down.
     jdSnapshot: { type: String, default: '' },
 
+    // The JobTarget this version belongs to — the middle tier the Android
+    // client already models. Optional so the two rows written before this
+    // layer existed stay readable.
+    targetId: { type: mongoose.Schema.Types.ObjectId, ref: 'JobTarget', default: null, index: true },
+
     // User-facing name for this version, e.g. 「強調數據分析」.
     label: { type: String, default: '', trim: true, maxlength: 100 },
+
+    // Must match SubmissionStatus in ResumeHierarchy.kt exactly; Kotlin enums
+    // are fixed at compile time and fail to parse on an unknown value.
+    status: {
+      type: String,
+      enum: ['DRAFT', 'SUBMITTED', 'INTERVIEWING', 'WAITING', 'REJECTED', 'OFFER'],
+      default: 'DRAFT',
+    },
+
+    // Set the first time the version is marked SUBMITTED.
+    submittedDate: { type: Date, default: null },
+
+    // What this version emphasises differently.
+    note: { type: String, default: '', maxlength: 500 },
 
     items: [resumeItemSchema],                             // 客製後的經歷清單
   },
