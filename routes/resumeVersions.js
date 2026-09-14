@@ -39,7 +39,7 @@ router.post('/', requireAuth, async (req, res) => {
         experienceId: it.experienceId || undefined,
         text: it.text || '',
         matchedKeywords: Array.isArray(it.matchedKeywords) ? it.matchedKeywords : [],
-        highlighted: Array.isArray(it.highlighted) ? it.highlighted : [],
+        highlighted: Boolean(it.highlighted),
       })),
     });
 

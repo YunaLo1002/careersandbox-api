@@ -6,7 +6,9 @@ const resumeItemSchema = new mongoose.Schema(
     experienceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Experience' },
     text: { type: String, default: '' },                  // 客製後的描述
     matchedKeywords: { type: [String], default: [] },     // 符合職缺的關鍵字
-    highlighted: { type: [String], default: [] },         // 高亮部分
+    // The AI service returns a boolean here (CustomizedItemOut.highlighted):
+    // whether this whole line should be emphasised, not which words.
+    highlighted: { type: Boolean, default: false },
   },
   { _id: false }
 );

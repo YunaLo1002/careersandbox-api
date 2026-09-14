@@ -196,7 +196,7 @@ router.post('/targets/:id/versions', requireAuth, async (req, res) => {
             experienceId: it.experienceId || undefined,
             text: it.text || '',
             matchedKeywords: Array.isArray(it.matchedKeywords) ? it.matchedKeywords : [],
-            highlighted: Array.isArray(it.highlighted) ? it.highlighted : [],
+            highlighted: Boolean(it.highlighted),
           }))
         : [],
     });
@@ -252,6 +252,119 @@ router.delete('/versions/:vid', requireAuth, async (req, res) => {
     return res.json({ id: deleted._id.toString(), deleted: true });
   } catch (err) {
     console.error('DELETE /resume/versions/:vid', err);
+    return fail(res, 500, 'internal_error', '服務暫時無法回應，請稍後再試');
+  }
+});
+
+
+// Where the model team's FastAPI service lives.
+const AI_BASE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8001';
+const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 60000);
+
+// Reshape a stored experience into the AI service's ExperienceIn, whose schema
+// declares `description` as a plain string while the collection stores
+// role/action/result/learning as a subdocument. Rows written before the schema
+// refactor still carry the old flat fields and `period`; `_doc` reaches them
+// because Mongoose strips fields the current schema does not declare.
+//
+// `learning` is left out on purpose: it is the user's own takeaway, which is
+// reflection material rather than something to match a JD against.
+function toExperienceIn(exp) {
+  const raw = exp._doc || exp;
+  const d = exp.description || {};
+  const role = d.role || raw.role || '';
+  const action = d.action || raw.action || '';
+  const result = d.result || raw.result || '';
+  return {
+    id: exp._id.toString(),
+    title: exp.title || '',
+    category: exp.category || '',
+    timeRange: exp.timeRange || raw.period || '',
+    description: [role, action, result].filter(Boolean).join('。'),
+    tags: Array.isArray(exp.tags) ? exp.tags : [],
+  };
+}
+
+// POST /resume/targets/:id/customize
+//
+// Runs B1: rewrite the user's experiences against this target's JD, then save
+// the result as a new version. Saving here rather than making the client do a
+// second call means a customization can never be lost between the two steps.
+router.post('/targets/:id/customize', requireAuth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return badId(res);
+
+    const target = await JobTarget.findOne({ _id: req.params.id, userId: req.userId });
+    if (!target) return badId(res);
+
+    // The AI service needs a JD to customize against. A target created without
+    // one yet has nothing to work from.
+    if (!target.jobId && !target.jdSnapshot) {
+      return fail(res, 422, 'validation_error', '這個職缺還沒有 JD，請先補上職缺敘述');
+    }
+
+    const docs = await Experience.find({ userId: req.userId }).sort({ createdAt: -1 });
+    if (docs.length === 0) {
+      return fail(res, 422, 'no_experiences', '還沒有任何經歷，請先新增經歷');
+    }
+
+    const aiRes = await fetch(`${AI_BASE_URL}/resume/customize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: req.userId,
+        jobId: target.jobId || target._id.toString(),
+        experiences: docs.map(toExperienceIn),
+      }),
+      signal: AbortSignal.timeout(AI_TIMEOUT_MS),
+    });
+
+    if (!aiRes.ok) {
+      const detail = await aiRes.text();
+      console.error('AI customize error:', aiRes.status, detail);
+      return fail(res, 502, 'ai_unavailable', 'AI 服務暫時無法回應，請稍後再試');
+    }
+
+    const data = await aiRes.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+
+    const existing = await ResumeVersion.countDocuments({ targetId: target._id });
+    const version = await ResumeVersion.create({
+      userId: req.userId,
+      targetId: target._id,
+      jobId: target.jobId || '',
+      jdSnapshot: target.jdSnapshot || '',
+      label: req.body?.label || `版本 ${String.fromCharCode(65 + existing)}`,
+      note: req.body?.note || 'AI 依 JD 客製',
+      status: 'DRAFT',
+      items: items.map((it) => ({
+        text: it.text || '',
+        matchedKeywords: Array.isArray(it.matchedKeywords) ? it.matchedKeywords : [],
+        highlighted: Boolean(it.highlighted),
+      })),
+    });
+
+    // Store the keywords the AI extracted so the target screen can show what
+    // this JD cares about without calling the service again.
+    if (Array.isArray(data.jdKeywords) && data.jdKeywords.length > 0) {
+      target.jdKeywords = data.jdKeywords;
+      await target.save();
+    }
+
+    return res.status(201).json({
+      version: toVersionDto(version),
+      items: version.items,
+      jdKeywords: data.jdKeywords || [],
+      coveredKeywords: data.coveredKeywords || [],
+    });
+  } catch (err) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      return fail(res, 504, 'ai_timeout', 'AI 服務回應逾時，請稍後再試');
+    }
+    if (err.cause?.code === 'ECONNREFUSED') {
+      return fail(res, 503, 'ai_not_running', 'AI 服務未啟動，請聯繫後端');
+    }
+    console.error('POST /resume/targets/:id/customize', err);
     return fail(res, 500, 'internal_error', '服務暫時無法回應，請稍後再試');
   }
 });
