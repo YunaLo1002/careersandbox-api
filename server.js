@@ -12,11 +12,12 @@ const resumeVersionRoutes = require('./routes/resumeVersions');
 const careerRoutes = require('./routes/career');
 const resumeHierarchyRoutes = require('./routes/resumeHierarchy');
 const interviewTranscribeRoutes = require('./routes/interviewTranscribe');
+const interviewSessionRoutes = require('./routes/interviewSessions');
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Routes. No /api prefix — the team guide and the Android client already use
 // these paths, so changing them would mean a coordinated client update for no
@@ -30,6 +31,7 @@ app.use('/resume-versions', resumeVersionRoutes);
 app.use('/career', careerRoutes);
 app.use('/resume', resumeHierarchyRoutes);
 app.use('/interview', interviewTranscribeRoutes);
+app.use('/interview-sessions', interviewSessionRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
