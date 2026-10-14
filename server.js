@@ -15,6 +15,10 @@ const interviewTranscribeRoutes = require('./routes/interviewTranscribe');
 
 const app = express();
 
+const aiRoutes = require('./routes/ai');
+
+// 前端連接到ai服務
+
 app.use(cors());
 app.use(express.json());
 
@@ -30,6 +34,7 @@ app.use('/resume-versions', resumeVersionRoutes);
 app.use('/career', careerRoutes);
 app.use('/resume', resumeHierarchyRoutes);
 app.use('/interview', interviewTranscribeRoutes);
+app.use('/ai', aiRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
