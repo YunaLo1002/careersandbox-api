@@ -12,15 +12,16 @@ const resumeVersionRoutes = require('./routes/resumeVersions');
 const careerRoutes = require('./routes/career');
 const resumeHierarchyRoutes = require('./routes/resumeHierarchy');
 const interviewTranscribeRoutes = require('./routes/interviewTranscribe');
+const interviewSessionRoutes = require('./routes/interviewSessions');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 
-const aiRoutes = require('./routes/ai');
 
 // 前端連接到ai服務
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Routes. No /api prefix — the team guide and the Android client already use
 // these paths, so changing them would mean a coordinated client update for no
