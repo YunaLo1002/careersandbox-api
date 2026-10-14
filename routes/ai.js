@@ -22,7 +22,7 @@ async function callAi(path, body) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(60000), // match the AI service's own 60s LLM timeout
   });
   const data = await r.json().catch(() => ({}));
   return { ok: r.ok, status: r.status, data };
