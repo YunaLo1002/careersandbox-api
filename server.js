@@ -13,8 +13,12 @@ const careerRoutes = require('./routes/career');
 const resumeHierarchyRoutes = require('./routes/resumeHierarchy');
 const interviewTranscribeRoutes = require('./routes/interviewTranscribe');
 const interviewSessionRoutes = require('./routes/interviewSessions');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
+
+
+// 前端連接到ai服務
 
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
@@ -31,7 +35,7 @@ app.use('/resume-versions', resumeVersionRoutes);
 app.use('/career', careerRoutes);
 app.use('/resume', resumeHierarchyRoutes);
 app.use('/interview', interviewTranscribeRoutes);
-app.use('/interview-sessions', interviewSessionRoutes);
+app.use('/ai', aiRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
