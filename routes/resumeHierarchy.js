@@ -44,9 +44,13 @@ function toTargetDto(t, versions) {
     id: t._id.toString(),
     title: t.title,
     company: t.company,
-    jobId: t.jobId || '',        // crawled job _id; empty when the JD was pasted
-    jdSnippet: (t.jdSnapshot || '').slice(0, 80),
+    jobId: t.jobId || '',
     jdKeywords: t.jdKeywords || [],
+    jdSnippet: (t.jdSnapshot || '').replace(/\s+/g, ' ').slice(0, 80),
+    matchScore: t.matchScore ?? null,
+    styleTag: t.styleTag || '',
+    requiredSkills: t.requiredSkills || [],
+    createdAt: t.createdAt ? t.createdAt.toISOString().slice(5, 10).replace('-', '/') : '',
     versions: versions.map(toVersionDto),
   };
 }
@@ -115,6 +119,10 @@ router.post('/targets', requireAuth, async (req, res) => {
       jdSnapshot: jdSnapshot || '',
       deadline: deadline || null,
     });
+
+    // Score right away so the new card has a number; a failure here is not
+    // fatal, the fit screen can recompute later.
+    try { await scoreTarget(target, req.userId); } catch (e) { console.error('auto-fit failed', e.message); }
 
     return res.status(201).json(toTargetDto(target, []));
   } catch (err) {
@@ -367,6 +375,65 @@ router.post('/targets/:id/customize', requireAuth, async (req, res) => {
       return fail(res, 503, 'ai_not_running', 'AI 服務未啟動，請聯繫後端');
     }
     console.error('POST /resume/targets/:id/customize', err);
+    return fail(res, 500, 'internal_error', '服務暫時無法回應，請稍後再試');
+  }
+});
+
+// Run B2 fit for one target and cache the result on it.
+// Shared by the explicit route below and by POST /resume/targets.
+async function scoreTarget(target, userId) {
+  const docs = await Experience.find({ userId }).sort({ createdAt: -1 });
+  if (docs.length === 0) return null;
+
+  const aiRes = await fetch(`${AI_BASE_URL}/jobs/${target._id.toString()}/fit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, experiences: docs.map(toExperienceIn) }),
+    signal: AbortSignal.timeout(AI_TIMEOUT_MS),
+  });
+  if (!aiRes.ok) {
+    console.error('AI fit error:', aiRes.status, await aiRes.text());
+    return null;
+  }
+  const data = await aiRes.json();
+
+  target.matchScore = typeof data.matchScore === 'number' ? data.matchScore : null;
+  target.styleTag = data.styleTag || '';
+  target.fitScoredAt = new Date();
+  // The crawled requiredSkills double as JD keywords when the target has none yet.
+  if ((!target.jdKeywords || target.jdKeywords.length === 0) && Array.isArray(data.requiredSkills)) {
+    target.jdKeywords = data.requiredSkills;
+  }
+  await target.save();
+  return data;
+}
+
+// POST /resume/targets/:id/fit — (re)compute the fit score for one target.
+// The fit-analysis screen calls this on open; the hub reads the cached value.
+router.post('/targets/:id/fit', requireAuth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return badId(res);
+    const target = await JobTarget.findOne({ _id: req.params.id, userId: req.userId });
+    if (!target) return badId(res);
+
+    const data = await scoreTarget(target, req.userId);
+    if (data === null) {
+      return fail(res, 422, 'no_experiences', '還沒有任何經歷，無法計算適配度');
+    }
+    const versions = await ResumeVersion.find({ targetId: target._id }).sort({ createdAt: 1 });
+    return res.json({
+      target: toTargetDto(target, versions),
+      requiredSkills: data.requiredSkills || [],
+      tags: data.tags || [],
+    });
+  } catch (err) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      return fail(res, 504, 'ai_timeout', 'AI 服務回應逾時，請稍後再試');
+    }
+    if (err.cause?.code === 'ECONNREFUSED') {
+      return fail(res, 503, 'ai_not_running', 'AI 服務未啟動，請聯繫後端');
+    }
+    console.error('POST /resume/targets/:id/fit', err);
     return fail(res, 500, 'internal_error', '服務暫時無法回應，請稍後再試');
   }
 });
