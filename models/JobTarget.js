@@ -32,6 +32,13 @@ const jobTargetSchema = new mongoose.Schema(
     jdSnapshot: { type: String, default: '', maxlength: 20000 },
 
     deadline: { type: Date, default: null },
+        // Fit between the user's experiences and this JD, computed by the AI service
+    // (B2 /jobs/{id}/fit). Cached here because the customize and detail screens
+    // need it without another round trip; recomputed on demand or when
+    // experiences change, so fitScoredAt says how fresh it is.
+    matchScore: { type: Number, default: null },     // 0–100, null = not scored yet
+    styleTag: { type: String, default: '' },
+    fitScoredAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
