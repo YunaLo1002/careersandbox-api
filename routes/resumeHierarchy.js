@@ -44,6 +44,8 @@ function toTargetDto(t, versions) {
     id: t._id.toString(),
     title: t.title,
     company: t.company,
+    jobId: t.jobId || '',        // crawled job _id; empty when the JD was pasted
+    jdSnippet: (t.jdSnapshot || '').slice(0, 80),
     jdKeywords: t.jdKeywords || [],
     versions: versions.map(toVersionDto),
   };
