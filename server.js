@@ -35,6 +35,7 @@ app.use('/resume-versions', resumeVersionRoutes);
 app.use('/career', careerRoutes);
 app.use('/resume', resumeHierarchyRoutes);
 app.use('/interview', interviewTranscribeRoutes);
+app.use('/interview-sessions', interviewSessionRoutes);
 app.use('/ai', aiRoutes);
 
 // Health check
