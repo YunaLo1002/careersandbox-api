@@ -1,7 +1,9 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 
 const InterviewSession = require('../models/InterviewSession');
+const ResumeVersion = require('../models/ResumeVersion');
 const requireAuth = require('../middleware/requireAuth');
 
 const MODES = ['single', 'panel', 'group'];
@@ -25,6 +27,17 @@ function pickScore(body, report) {
   return typeof raw === 'number' && Number.isFinite(raw) && raw >= 0 && raw <= 100 ? raw : null;
 }
 
+// Accept a resume version id only if it exists and belongs to this user;
+// anything else is dropped rather than stored as an unverifiable reference.
+async function resolveResumeVersion(id, userId) {
+  const none = { resumeVersionId: '', resumeVersionLabel: '' };
+  if (typeof id !== 'string' || !mongoose.isValidObjectId(id)) return none;
+  const v = await ResumeVersion.findOne({ _id: id, userId }).select('label');
+  return v ? { resumeVersionId: id, resumeVersionLabel: v.label || '' } : none;
+}
+
+// resumeVersion + createdAt let the report screen say "based on 版本 B as of
+// <date>", so a report that no longer matches an edited resume is explained.
 function toDetail(doc) {
   return {
     id: doc.sessionId,
@@ -36,6 +49,10 @@ function toDetail(doc) {
     turns: doc.turns || [],
     groupSays: doc.groupSays || [],
     jdSkills: doc.jdSkills || [],
+    openingIntro: doc.openingIntro || '',
+    resumeVersion: doc.resumeVersionId
+      ? { id: doc.resumeVersionId, label: doc.resumeVersionLabel || '' }
+      : null,
     report: doc.report,
     createdAt: doc.createdAt,
   };
@@ -57,6 +74,8 @@ router.post('/', requireAuth, async (req, res) => {
   }
 
   try {
+    const resume = await resolveResumeVersion(body.resumeVersionId, req.userId);
+
     const doc = await InterviewSession.findOneAndUpdate(
       // userId always comes from the token, never from the body.
       { sessionId, userId: req.userId },
@@ -68,6 +87,8 @@ router.post('/', requireAuth, async (req, res) => {
         turns: asArray(body.turns),
         groupSays: asArray(body.groupSays),
         jdSkills: asStringArray(body.jdSkills),
+        openingIntro: typeof body.openingIntro === 'string' ? body.openingIntro : '',
+        ...resume,
         overallScore: pickScore(body, report),
         scoreBasis: asStringArray(body.scoreBasis ?? report.scoreBasis),
       },

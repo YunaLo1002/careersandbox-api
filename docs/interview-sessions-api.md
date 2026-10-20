@@ -40,8 +40,10 @@
 | `jdSkills` | string[] | | 開場 `POST /interviews` 回傳的 `jdSkills`，**原樣送，不要排序或去重**（順序就是重要性） |
 | `overallScore` | number | | 模型算的總分 0–100。也可以不送，後端會讀 `report.overallScore`。模型組尚未上線，目前不用送 |
 | `scoreBasis` | string[] | | 總分用了哪幾項算的。沒送就讀 `report.scoreBasis` |
+| `openingIntro` | string | | 開場 `POST /interviews` 回傳的面試官自我介紹，原樣送 |
+| `resumeVersionId` | string | | 這場面試用的履歷版本 id（`resume_versions` 的 id）。必須是這個使用者自己的版本，否則會被忽略 |
 
-> `probeGap`、`probeDepth` 是每輪傳輸用的暫態，**不用送來存**。
+> 以下**不用送來存**：`probeGap`、`probeDepth`（每輪傳輸用的暫態）、`experiences`（資料庫本來就有，存 `resumeVersionId` 即可）、`askedQuestions`（就是 `turns[].question`）、面試階段（由 `followUpIdx` 算出）。
 
 `participants` 每一位：
 
@@ -133,12 +135,16 @@
   "turns": [],
   "groupSays": [ … ],
   "jdSkills": ["SQL", "Python"],
+  "openingIntro": "你好，我是聯發科資料分析實習生的面試官……",
+  "resumeVersion": { "id": "6acf…", "label": "版本 B" },
   "report": { … 模型服務的報告原樣 … },
   "createdAt": "2026-10-14T03:18:38.599Z"
 }
 ```
 
 報告畫面直接讀 `report`，欄位與模型服務回傳完全一致。
+
+`resumeVersion` 沒有對應版本時是 `null`。報告頁可以顯示「本次以 版本 B（`createdAt` 當天）為準」，因為履歷版本之後可能被編輯過，報告的「還缺什麼」可能和現在的履歷對不上。
 
 ---
 
