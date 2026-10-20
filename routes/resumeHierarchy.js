@@ -52,6 +52,7 @@ function toTargetDto(t, versions) {
     requiredSkills: t.requiredSkills || [],
     createdAt: t.createdAt ? t.createdAt.toISOString().slice(5, 10).replace('-', '/') : '',
     versions: versions.map(toVersionDto),
+    salary: t.salary || '',
   };
 }
 
@@ -409,6 +410,7 @@ async function scoreTarget(target, userId) {
 
   target.matchScore = typeof data.matchScore === 'number' ? data.matchScore : null;
   target.styleTag = data.styleTag || '';
+  target.salary = data.salary || '';
   // Structured skills from the crawled posting (B2 echoes them back). Kept
   // separate from jdKeywords, which the customize step later overwrites with
   // keywords extracted from the JD body.

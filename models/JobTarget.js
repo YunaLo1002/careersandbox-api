@@ -40,6 +40,7 @@ const jobTargetSchema = new mongoose.Schema(
     styleTag: { type: String, default: '' },
     fitScoredAt: { type: Date, default: null },
     requiredSkills: { type: [String], default: [] },
+    salary: { type: String, default: '' },   // echoed by B2 from the crawled posting
   },
   { timestamps: true }
 );
