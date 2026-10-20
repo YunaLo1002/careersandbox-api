@@ -39,6 +39,7 @@ const jobTargetSchema = new mongoose.Schema(
     matchScore: { type: Number, default: null },     // 0–100, null = not scored yet
     styleTag: { type: String, default: '' },
     fitScoredAt: { type: Date, default: null },
+    requiredSkills: { type: [String], default: [] },
   },
   { timestamps: true }
 );
