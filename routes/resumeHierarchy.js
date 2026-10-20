@@ -385,10 +385,17 @@ async function scoreTarget(target, userId) {
   const docs = await Experience.find({ userId }).sort({ createdAt: -1 });
   if (docs.length === 0) return null;
 
+  const body = { userId, experiences: docs.map(toExperienceIn) };
+  // Debug aid for the model team's checklist (step 3): what we actually send.
+  // Set FIT_DEBUG=1 in .env to turn it on; off by default to keep logs quiet.
+  if (process.env.FIT_DEBUG === '1') {
+    console.log('FIT BODY', `${AI_BASE_URL}/jobs/${target._id.toString()}/fit`, JSON.stringify(body, null, 2));
+  }
+
   const aiRes = await fetch(`${AI_BASE_URL}/jobs/${target._id.toString()}/fit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, experiences: docs.map(toExperienceIn) }),
+    body: JSON.stringify(body),
     signal: AbortSignal.timeout(AI_TIMEOUT_MS),
   });
   if (!aiRes.ok) {
@@ -396,14 +403,17 @@ async function scoreTarget(target, userId) {
     return null;
   }
   const data = await aiRes.json();
+  if (process.env.FIT_DEBUG === '1') {
+    console.log('FIT RESPONSE', JSON.stringify(data, null, 2));
+  }
 
   target.matchScore = typeof data.matchScore === 'number' ? data.matchScore : null;
   target.styleTag = data.styleTag || '';
+  // Structured skills from the crawled posting (B2 echoes them back). Kept
+  // separate from jdKeywords, which the customize step later overwrites with
+  // keywords extracted from the JD body.
+  target.requiredSkills = Array.isArray(data.requiredSkills) ? data.requiredSkills : [];
   target.fitScoredAt = new Date();
-  // The crawled requiredSkills double as JD keywords when the target has none yet.
-  if ((!target.jdKeywords || target.jdKeywords.length === 0) && Array.isArray(data.requiredSkills)) {
-    target.jdKeywords = data.requiredSkills;
-  }
   await target.save();
   return data;
 }
