@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
+    contactEmail: { type: String, default: '' },
     school: { type: String, default: '' },
     department: { type: String, default: '' },
     year: { type: String, default: '' },
