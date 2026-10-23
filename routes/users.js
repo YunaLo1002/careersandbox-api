@@ -10,6 +10,7 @@ function toDto(user) {
     userId: user._id.toString(),
     name: user.name,
     email: user.email,
+    contactEmail: user.contactEmail ?? '',
     school: user.school,
     department: user.department,
     year: user.year,
@@ -57,7 +58,7 @@ router.patch('/me', requireAuth, async (req, res) => {
   try {
     // Whitelist: email is deliberately NOT here (it is the login key)
     const allowed = [
-      'name', 'school', 'department', 'year',
+      'name', 'contactEmail', 'school', 'department', 'year',
       'phone', 'bio', 'linkedin', 'github', 'portfolio',
       'interests', 'skillsHave', 'skillsWant', 'languages', 'activities',
     ];
