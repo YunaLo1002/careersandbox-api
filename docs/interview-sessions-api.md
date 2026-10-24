@@ -38,8 +38,8 @@
 | `turns` | array | | 一對一、panel 的問答紀錄，格式同送給模型服務產報告的 turns |
 | `groupSays` | array | | 群面逐則發言，格式見下方，僅 group 模式 |
 | `jdSkills` | string[] | | 開場 `POST /interviews` 回傳的 `jdSkills`，**原樣送，不要排序或去重**（順序就是重要性） |
-| `overallScore` | number | | 模型算的總分 0–100。也可以不送，後端會讀 `report.overallScore`。模型組尚未上線，目前不用送 |
-| `scoreBasis` | string[] | | 總分用了哪幾項算的。沒送就讀 `report.scoreBasis` |
+| `overallScore` | number \| null | | 模型算的總分 0–100，**浮點數，不要取整數**。`null` 代表這場沒有任何一項可評，不是 0 分。沒送就讀 `report.overallScore` |
+| `scoreBasis` | int \| null | | 總分是用**幾項**細分算出來的（例如表達流暢度量不到時是 5）。沒送就讀 `report.scoreBasis` |
 | `openingIntro` | string | | 開場 `POST /interviews` 回傳的面試官自我介紹，原樣送 |
 | `resumeVersionId` | string | | 這場面試用的履歷版本 id（`resume_versions` 的 id）。必須是這個使用者自己的版本，否則會被忽略 |
 
@@ -129,7 +129,7 @@
   "id": "itv_d3e0a549a608",
   "mode": "group",
   "score": null,
-  "scoreBasis": [],
+  "scoreBasis": null,
   "config": { "targetJobTitle": "群面測試" },
   "participants": [ … ],
   "turns": [],

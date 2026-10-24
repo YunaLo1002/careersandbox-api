@@ -50,10 +50,14 @@ const interviewSessionSchema = new mongoose.Schema(
     report: { type: mongoose.Schema.Types.Mixed, required: true },
 
     // Summary number computed by the model service (not a simple average).
-    // Stays null until the model team ships it. scoreBasis lists which
-    // sub-scores went into it, e.g. fluency is left out for very short answers.
+    // A float: never round it here, the old frontend bug was truncating
+    // 64.67 to 64. null means nothing in the session could be scored, which
+    // is not the same as 0 (scored, lowest performance).
     overallScore: { type: Number, default: null, min: 0, max: 100 },
-    scoreBasis: { type: [String], default: [] },
+    // How many sub-scores the total was computed from (e.g. 5 when fluency
+    // could not be measured). A 72 from six items and a 72 from one item look
+    // the same on screen but are not equally reliable.
+    scoreBasis: { type: Number, default: null, min: 0 },
   },
   { timestamps: true }
 );

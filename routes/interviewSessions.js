@@ -38,12 +38,18 @@ async function resolveResumeVersion(id, userId) {
 
 // resumeVersion + createdAt let the report screen say "based on 版本 B as of
 // <date>", so a report that no longer matches an edited resume is explained.
+// scoreBasis is a count of sub-scores; anything else is treated as unknown.
+function pickScoreBasis(body, report) {
+  const raw = body.scoreBasis ?? report.scoreBasis;
+  return Number.isInteger(raw) && raw >= 0 ? raw : null;
+}
+
 function toDetail(doc) {
   return {
     id: doc.sessionId,
     mode: doc.mode,
     score: doc.overallScore,
-    scoreBasis: doc.scoreBasis || [],
+    scoreBasis: typeof doc.scoreBasis === 'number' ? doc.scoreBasis : null,
     config: doc.config || {},
     participants: doc.participants || [],
     turns: doc.turns || [],
@@ -90,7 +96,7 @@ router.post('/', requireAuth, async (req, res) => {
         openingIntro: typeof body.openingIntro === 'string' ? body.openingIntro : '',
         ...resume,
         overallScore: pickScore(body, report),
-        scoreBasis: asStringArray(body.scoreBasis ?? report.scoreBasis),
+        scoreBasis: pickScoreBasis(body, report),
       },
       { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
     );
