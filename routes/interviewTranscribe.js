@@ -2,6 +2,7 @@
 const express = require('express');
 const multer = require('multer');
 const requireAuth = require('../middleware/requireAuth');
+const { tightenSegments } = require('../utils/tightenSegments');
 
 const router = express.Router();
 
@@ -13,6 +14,9 @@ const upload = multer({
   limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
 });
 
+// Keep whisper-1. gpt-4o-transcribe / gpt-4o-mini-transcribe only return plain
+// json with no timestamps at all, which would make pauses unmeasurable.
+// Check with the model team before overriding this.
 const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1';
 
 // POST /interview/transcribe — 收一個音檔欄位叫 "audio"，回傳轉錄文字
@@ -32,14 +36,20 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
 
     // Whisper 的轉錄端點跟 experienceChat.js 用的 chat completions 端點不一樣，
     // 它也是吃 multipart/form-data（跟前端傳給我們的方式一樣），所以這裡也要用 FormData 包一次再轉送出去。
-        const form = new FormData();
+    const form = new FormData();
     form.append('file', new Blob([req.file.buffer], { type: 'audio/mp4' }), 'audio.m4a');
     form.append('model', TRANSCRIBE_MODEL);
-    // 模型組需要 segment 級別的時間戳記跟每段的信心指標，這兩個參數是關鍵：
-    // verbose_json 讓 OpenAI 除了整段文字，額外回傳 segments 陣列；
-    // timestamp_granularities[] 指定要 segment 級（不要 word 級，避免多餘延遲）
+    // 模型組需要 segment 級別的時間戳記跟每段的信心指標：
+    // verbose_json 讓 OpenAI 除了整段文字，額外回傳 segments 陣列。
+    // Word timestamps are requested too: segment times are coarse and
+    // back-to-back, so pauses only show up once segments are re-bounded by
+    // their own words (see utils/tightenSegments.js). Word granularity adds
+    // some latency; the elapsed time is logged below so it can be measured.
     form.append('response_format', 'verbose_json');
+    form.append('timestamp_granularities[]', 'word');
     form.append('timestamp_granularities[]', 'segment');
+
+    const startedAt = Date.now();
 
     const aiRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -56,10 +66,26 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
     }
 
     const data = await aiRes.json();
+    const elapsedMs = Date.now() - startedAt;
+
+    // Re-bound each segment by its first and last word. If words and segments
+    // do not spell the same text, Whisper's own times are kept and the model
+    // service treats pauses for this answer as unavailable.
+    const { segments, aligned } = tightenSegments(data.segments, data.words);
+    console.log(
+      `transcribe: audio ${data.duration ?? '?'}s, took ${elapsedMs}ms, ` +
+        `${(data.words ?? []).length} words, ${segments.length} segments, aligned=${aligned}`
+    );
+    if (!aligned && (data.segments ?? []).length > 0) {
+      console.warn('transcribe: word/segment text mismatch, kept original segment times');
+    }
+
+    // Response shape is unchanged; times stay in seconds. Clients converting
+    // to ms must use Math.round(sec * 1000), never truncate to whole seconds.
     return res.status(200).json({
       text: data.text ?? '',
       duration: data.duration ?? null,
-      segments: (data.segments ?? []).map((s) => ({
+      segments: segments.map((s) => ({
         start: s.start,
         end: s.end,
         text: s.text,
