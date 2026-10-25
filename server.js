@@ -14,7 +14,7 @@ const resumeHierarchyRoutes = require('./routes/resumeHierarchy');
 const interviewTranscribeRoutes = require('./routes/interviewTranscribe');
 const interviewSessionRoutes = require('./routes/interviewSessions');
 const aiRoutes = require('./routes/ai');
-
+const path = require('path');
 const app = express();
 
 
@@ -37,6 +37,7 @@ app.use('/resume', resumeHierarchyRoutes);
 app.use('/interview', interviewTranscribeRoutes);
 app.use('/interview-sessions', interviewSessionRoutes);
 app.use('/ai', aiRoutes);
+app.use('/covers', express.static(path.join(__dirname, 'public', 'covers')))
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
