@@ -37,7 +37,8 @@ app.use('/resume', resumeHierarchyRoutes);
 app.use('/interview', interviewTranscribeRoutes);
 app.use('/interview-sessions', interviewSessionRoutes);
 app.use('/ai', aiRoutes);
-app.use('/covers', express.static(path.join(__dirname, 'public', 'covers')))
+app.use('/covers', express.static(path.join(__dirname, 'public', 'covers')));
+app.use('/competitions', require('./routes/competitions'));
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
