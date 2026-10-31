@@ -47,6 +47,7 @@ function toTargetDto(t, versions) {
     jobId: t.jobId || '',
     jdKeywords: t.jdKeywords || [],
     jdSnippet: (t.jdSnapshot || '').replace(/\s+/g, ' ').slice(0, 80),
+    jdSnapshot: t.jdSnapshot || '',
     matchScore: t.matchScore ?? null,
     styleTag: t.styleTag || '',
     requiredSkills: t.requiredSkills || [],
