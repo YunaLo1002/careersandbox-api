@@ -99,7 +99,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const exp = await Experience.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId }, // ownership check
       updates,
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
     if (!exp) return res.status(404).json({ error: { code: 'not_found', message: '找不到這筆經歷' } });
     return res.status(200).json(toDto(exp));

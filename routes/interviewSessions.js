@@ -98,7 +98,7 @@ router.post('/', requireAuth, async (req, res) => {
         overallScore: pickScore(body, report),
         scoreBasis: pickScoreBasis(body, report),
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true }
     );
     return res.status(201).json(toDetail(doc));
   } catch (err) {

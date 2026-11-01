@@ -149,7 +149,7 @@ router.patch('/targets/:id', requireAuth, async (req, res) => {
     const target = await JobTarget.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
       updates,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     if (!target) return badId(res);
 

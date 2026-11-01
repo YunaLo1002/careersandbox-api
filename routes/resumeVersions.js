@@ -109,7 +109,7 @@ router.patch('/:versionId', requireAuth, async (req, res) => {
     const version = await ResumeVersion.findOneAndUpdate(
       { _id: req.params.versionId, userId: req.userId }, // ownership check
       updates,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     if (!version) return badId(res);
     return res.json(version);

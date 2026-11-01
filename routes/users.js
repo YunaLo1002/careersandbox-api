@@ -96,7 +96,7 @@ router.patch('/me', requireAuth, async (req, res) => {
     }
 
     const user = await User.findByIdAndUpdate(req.userId, updates, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     if (!user) return res.status(404).json({ error: { code: 'not_found', message: '找不到使用者資料' } });
@@ -142,7 +142,7 @@ router.post('/me/activities', requireAuth, async (req, res) => {
           },
         },
       },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     if (!user) return res.status(404).json({ error: { code: 'not_found', message: '找不到使用者資料' } });
 
@@ -180,7 +180,7 @@ router.delete('/me/activities/:activityId', requireAuth, async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.userId,
       { $pull: { activities: { _id: req.params.activityId } } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!user) return res.status(404).json({ error: { code: 'not_found', message: '找不到使用者資料' } });
 
