@@ -12,13 +12,16 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@ricky0123/vad-node": "0.0.3",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "ffmpeg-static": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.4",
     "multer": "^2.3.0",
+    "onnxruntime-node": "^1.31.1",
     "opencc-js": "^1.4.2"
   },
   "devDependencies": {

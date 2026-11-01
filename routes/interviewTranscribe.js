@@ -3,7 +3,8 @@ const express = require('express');
 const multer = require('multer');
 const requireAuth = require('../middleware/requireAuth');
 const { tightenSegments } = require('../utils/tightenSegments');
-const { cleanTranscript } = require('../utils/cleanTranscript');
+const { cleanTranscript, TRANSCRIBE_PROMPT } = require('../utils/cleanTranscript');
+const { speechRegions } = require('../utils/speechRegions');
 
 const router = express.Router();
 
@@ -20,10 +21,10 @@ const upload = multer({
 // Check with the model team before overriding this.
 const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1';
 
-// Whisper copies the style of the prompt, so a Traditional Chinese prompt with
-// full-width punctuation steers the output that way. Keep it short: in silent
-// stretches Whisper may write prompt words out as if they were spoken.
-const TRANSCRIBE_PROMPT = '以下是一段面試回答，使用繁體中文與全形標點。';
+// Set TRANSCRIBE_LOG_TEXT=1 to log what Whisper returned next to what is sent
+// back, for checking reports of Simplified text or hallucinations. Off by
+// default because it writes the candidate's answers into the server log.
+const LOG_TEXT = process.env.TRANSCRIBE_LOG_TEXT === '1';
 
 // POST /interview/transcribe — 收一個音檔欄位叫 "audio"，回傳轉錄文字
 // upload.single('audio')：告訴 multer「這個路由只收一份檔案，表單欄位名稱是 audio」，
@@ -38,6 +39,21 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
       return res.status(503).json({
         error: { code: 'ai_not_configured', message: '語音轉文字功能尚未設定完成' },
       });
+    }
+
+    // Check the audio for speech before paying for Whisper. With no speech at
+    // all Whisper only produces hallucinations, so an empty answer is returned
+    // straight away. If the check itself fails (a file ffmpeg cannot read),
+    // the audio still goes to Whisper and only the text filters apply.
+    let speech = null;
+    try {
+      speech = await speechRegions(req.file.buffer);
+    } catch (err) {
+      console.warn('transcribe: speech detection failed, sending to Whisper unchecked:', err.message);
+    }
+    if (speech && speech.regions.length === 0) {
+      console.log(`transcribe: no speech in ${speech.duration.toFixed(1)}s of audio, Whisper skipped`);
+      return res.status(200).json({ text: '', duration: speech.duration, segments: [] });
     }
 
     // Whisper 的轉錄端點跟 experienceChat.js 用的 chat completions 端點不一樣，
@@ -85,11 +101,15 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
     // Order matters: align first (needs every segment), then drop silent or
     // hallucinated segments, then rebuild the text from what is left. data.text
     // is not used because it still contains the dropped sentences.
-    const { segments, text } = cleanTranscript(alignedSegments);
+    const { segments, text } = cleanTranscript(alignedSegments, { aligned, speech: speech?.regions });
     console.log(
       `transcribe: audio ${data.duration ?? '?'}s, took ${elapsedMs}ms, ` +
         `${(data.words ?? []).length} words, ${segments.length} segments, aligned=${aligned}`
     );
+    if (LOG_TEXT) {
+      console.log(`transcribe raw:   ${JSON.stringify(data.text ?? '')}`);
+      console.log(`transcribe clean: ${JSON.stringify(text)}`);
+    }
     if (!aligned && (data.segments ?? []).length > 0) {
       console.warn('transcribe: word/segment text mismatch, kept original segment times');
     }
