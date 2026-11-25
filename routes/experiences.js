@@ -2,8 +2,21 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Experience = require('../models/Experience');
 const requireAuth = require('../middleware/requireAuth');
+const { tagExperience } = require('../utils/experienceTags');
 
 const router = express.Router();
+
+// Runs after the response is sent, so saving never waits on the AI call.
+function tagInBackground(exp) {
+  const id = exp._id.toString();
+  tagExperience(exp)
+    .then((r) => {
+      if (!r) console.warn('experience tags skipped: OPENAI_API_KEY is not set');
+      else if (!r.written) console.log('experience tags', id, 'not written: edited again meanwhile');
+      else console.log('experience tags', id, r.tags.join(', ') || '(none)');
+    })
+    .catch((err) => console.error('tagExperience failed', id, err.message));
+}
 
 // GET /experiences — list the caller's own experiences, newest first
 router.get('/', requireAuth, async (req, res) => {
@@ -37,7 +50,10 @@ router.post('/', requireAuth, async (req, res) => {
       description: readDescription(body),
       tags: Array.isArray(tags) ? tags : [],
     });
-    return res.status(201).json(toDto(exp));
+    res.status(201).json(toDto(exp));
+    // Tags the client sent are kept as they are; otherwise generate them.
+    if (!Array.isArray(tags) || tags.length === 0) tagInBackground(exp);
+    return;
   } catch (err) {
     console.error(err);
     return res.status(500).json({ 
@@ -82,6 +98,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
       if (body[key] !== undefined) updates[key] = body[key];
     }
     if (updates.tags !== undefined && !Array.isArray(updates.tags)) delete updates.tags;
+    // The App always sends "tags": [] because it has no tag field. Treat an empty
+    // array as "not provided" so an edit never wipes the generated tags.
+    if (Array.isArray(updates.tags) && updates.tags.length === 0) delete updates.tags;
 
     if (body.timeRange !== undefined || body.period !== undefined) {
       updates.timeRange = readTimeRange(body);
@@ -102,7 +121,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
       { returnDocument: 'after', runValidators: true },
     );
     if (!exp) return res.status(404).json({ error: { code: 'not_found', message: '找不到這筆經歷' } });
-    return res.status(200).json(toDto(exp));
+    res.status(200).json(toDto(exp));
+    // Re-tag when the request carries title or description text, unless it
+    // set tags itself.
+    const textSent = updates.title !== undefined || updates.description !== undefined;
+    if (textSent && updates.tags === undefined) tagInBackground(exp);
+    return;
   } catch (err) {
     console.error(err);
     return res.status(500).json({ 
